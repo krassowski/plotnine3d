@@ -1,4 +1,4 @@
-from plotnine import geom_polygon, geom_point, geom_path
+from plotnine import geom_polygon, geom_point, geom_path, geom_text, geom_label
 from plotnine.utils import to_rgba, SIZE_FACTOR
 from plotnine.geoms.geom_path import _get_joinstyle
 import numpy as np
@@ -171,3 +171,122 @@ class geom_point_3d(geom_point):
         for _, udata in data.groupby(units, dropna=False):
             udata.reset_index(inplace=True, drop=True)
             geom_point_3d.draw_unit(udata, panel_params, coord, ax, **params)
+
+
+class geom_text_3d(geom_text):
+    """
+    This class is reusing the code of `plotnine.geom_text` which is licensed under:
+
+    The MIT License (MIT)
+
+    Copyright (c) 2022 Hassan Kibirige
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.
+    """
+
+    REQUIRED_AES = {
+        'x', 'y', 'z',
+        'label'
+    }
+    DEFAULT_AES = {
+        'zdir': None,
+        **geom_text.DEFAULT_AES
+    }
+
+    @staticmethod
+    def draw_group(data, panel_params, coord, ax, **params):
+        data = coord.transform(data, panel_params)
+
+        # Bind color and alpha
+        color = to_rgba(data['color'], data['alpha'])
+
+        # Create a dataframe for the plotting data required
+        # adding custom "params" mappings
+
+        df = data[['x', 'y', 'z', 'size']].copy()
+        df['zdir'] = data['zdir']
+        df['s'] = data['label']
+        df['rotation'] = data['angle']
+        df['linespacing'] = data['lineheight']
+        df['color'] = color
+        df['ha'] = data['ha']
+        df['va'] = data['va']
+        df['family'] = params['family']
+        df['fontweight'] = params['fontweight']
+        df['fontstyle'] = params['fontstyle']
+        df['zorder'] = params['zorder']
+        df['rasterized'] = params['raster']
+        df['clip_on'] = True
+
+        # 'boxstyle' indicates geom_label so we need an MPL bbox
+        draw_label = 'boxstyle' in params
+        if draw_label:
+            fill = to_rgba(data.pop('fill'), data['alpha'])
+            if isinstance(fill, tuple):
+                fill = [list(fill)] * len(data['x'])
+            df['facecolor'] = fill
+
+            if params['boxstyle'] in ('round', 'round4'):
+                boxstyle = '{},pad={},rounding_size={}'.format(
+                    params['boxstyle'],
+                    params['label_padding'],
+                    params['label_r'])
+            elif params['boxstyle'] in ('roundtooth', 'sawtooth'):
+                boxstyle = '{},pad={},tooth_size={}'.format(
+                    params['boxstyle'],
+                    params['label_padding'],
+                    params['tooth_size'])
+            else:
+                boxstyle = '{},pad={}'.format(
+                    params['boxstyle'],
+                    params['label_padding'])
+            bbox = {'linewidth': params['label_size'],
+                    'boxstyle': boxstyle}
+        else:
+            bbox = {}
+
+        texts = []
+
+        # For labels add a bbox
+        for i in range(len(data)):
+            kw = df.iloc[i].to_dict()
+            if draw_label:
+                kw['bbox'] = bbox
+                kw['bbox']['edgecolor'] = params['boxcolor'] or kw['color']
+                kw['bbox']['facecolor'] = kw.pop('facecolor')
+
+            text_elem = ax.text(**kw)
+            texts.append(text_elem)
+            if params['path_effects']:
+                text_elem.set_path_effects(params['path_effects'])
+
+
+class geom_label_3d(geom_text_3d):
+    DEFAULT_AES = {
+        **geom_text_3d.DEFAULT_AES,
+        **geom_label.DEFAULT_AES
+    }
+    DEFAULT_PARAMS = {
+        **geom_text_3d.DEFAULT_PARAMS,
+        **geom_label.DEFAULT_PARAMS
+    }
+
+    @staticmethod
+    def draw_legend(data, da, lyr):
+        geom_label.draw_legend(data, da, lyr)

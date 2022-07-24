@@ -2,7 +2,9 @@ from plotnine import ggplot
 import matplotlib.pyplot as plt
 
 
+
 class ggplot_3d(ggplot):
+
     def _create_figure(self):
         figure = plt.figure()
         axs = [plt.axes(projection='3d')]
@@ -16,4 +18,4 @@ class ggplot_3d(ggplot):
         ax = self.axs[0]
         ax.set_xlabel(self.layout.xlabel(self.labels))
         ax.set_ylabel(self.layout.ylabel(self.labels))
-        ax.set_zlabel(self.labels['z'])
+        ax.set_zlabel(self.labels.get('z', 'z'))
