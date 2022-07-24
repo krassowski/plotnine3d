@@ -289,4 +289,4 @@ class geom_label_3d(geom_text_3d):
 
     @staticmethod
     def draw_legend(data, da, lyr):
-        geom_label.draw_legend(data, da, lyr)
+        return geom_label.draw_legend(data, da, lyr)
