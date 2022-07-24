@@ -3,7 +3,7 @@ from .plot import ggplot_3d
 from .labels import zlab
 
 
-__version__ = '0.0.3'
+__version__ = '0.0.4'
 
 
 __all__ = [
