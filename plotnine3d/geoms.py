@@ -1,8 +1,10 @@
+import importlib
+import packaging
+from warnings import warn
 from plotnine import geom_polygon, geom_point, geom_path, geom_text, geom_label
 from plotnine.utils import to_rgba, SIZE_FACTOR
 from plotnine.geoms.geom_path import _get_joinstyle
 import numpy as np
-from warnings import warn
 
 
 class geom_line_3d(geom_path):
@@ -143,14 +145,21 @@ class geom_point_3d(geom_point):
             fill = to_rgba(data['fill'], data['alpha'])
 
         # https://github.com/matplotlib/matplotlib/issues/23433
-        stroke = set(stroke)
+        stroke_set = set(stroke)
 
-        if len(stroke) > 1:
-            warn(
-                'Variable stroke values not supported for `geom_point_3d` see'
-                ' https://github.com/matplotlib/matplotlib/issues/23433'
-            )
-        stroke = next(iter(stroke))
+        if len(stroke_set) > 1:
+            version = importlib.metadata.version('matplotlib')
+            required = packaging.version.parse('3.6.0')
+            detected = packaging.version.parse(version)
+            supports_array_stroke = detected >= required
+            if not supports_array_stroke:
+                warn(
+                    'Variable stroke values in `geom_point_3d` require'
+                    f' matplotlib v3.6.0+ (detected matplotlib: {mpl_version}).'
+                )
+                stroke = next(iter(stroke_set))
+        else:
+            stroke = next(iter(stroke_set))
 
         ax.scatter3D(
             data['x'],
