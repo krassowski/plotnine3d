@@ -19,3 +19,7 @@ class ggplot_3d(ggplot):
         ax.set_xlabel(self.layout.xlabel(self.labels))
         ax.set_ylabel(self.layout.ylabel(self.labels))
         ax.set_zlabel(self.labels.get('z', 'z'))
+
+    def __repr__(self):
+        super().__repr__()
+        return '<ggplot3d>'
